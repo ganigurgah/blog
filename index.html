@@ -14,6 +14,28 @@
             --accent-color: #007bff;
             --hover-bg: #f1f3f5;
         }
+        /* Koyu Tema Değişkenleri */
+        [data-theme="dark"] {
+            --bg-color: #1a1b1e;
+            --sidebar-bg: #25262b;
+            --text-color: #c1c2c5;
+            --border-color: #373a40;
+            --accent-color: #4dabf7;
+            --hover-bg: #2c2e33;
+        }
+        #theme-toggle-btn:hover {
+            background-color: var(--hover-bg);
+        }
+        /* Koyu modda sağ taraftaki makale alanının arka planını koyu yapmak için */
+        [data-theme="dark"] #content-area {
+            background: #1a1b1e;
+        }
+
+        /* Koyu modda Markdown içindeki satır içi (inline) kod blokları */
+        [data-theme="dark"] .inner-content :not(pre) > code {
+            background: #2c2e33;
+            color: #4dabf7;
+        }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; height: 100vh; color: var(--text-color); background-color: var(--bg-color); }
@@ -53,6 +75,13 @@
 <body>
 
 <div id="sidebar">
+    <div class="theme-control-wrapper" style="padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: flex-start; font-size: 13px;">
+        <span></span>
+        <button id="theme-toggle-btn" style="background: none; border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-color); transition: background 0.2s;">
+            <span id="theme-icon">🌓</span>
+            <span id="theme-text"></span>
+        </button>
+    </div>
     <div class="search-box">
         <input type="text" id="search-input" placeholder="Dosya veya klasör ara...">
     </div>
@@ -256,6 +285,73 @@
         const filteredResults = allFiles.filter(f => f.name.toLowerCase().includes(query));
         renderDirectory(filteredResults);
     });
+
+    // --- TEMA YÖNETİMİ (BUTON VE İKON DÖNGÜSÜ) ---
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const themeIcon = document.getElementById('theme-icon');
+    const themeText = document.getElementById('theme-text');
+
+    // Temalar arası geçiş sıralaması (Döngü)
+    const themeCycle = ['light', 'dark', 'system'];
+
+    // Her temanın arayüzdeki görsel karşılıkları
+    const themeMetadata = {
+        light: { icon: '☀️', label: '' },
+        dark: { icon: '🌙', label: '' },
+        system: { icon: '🌓', label: '' }
+    };
+
+    function applyTheme(theme) {
+        let targetTheme = theme;
+
+        if (theme === 'system') {
+            const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            targetTheme = isDarkMode ? 'dark' : 'light';
+        }
+
+        // HTML root etiketine temayı bas
+        document.documentElement.setAttribute('data-theme', targetTheme);
+
+        // Butonun içindeki ikon ve metni güncelle (Kullanıcı o an hangi modun aktif olduğunu görsün)
+        themeIcon.textContent = themeMetadata[theme].icon;
+        themeText.textContent = themeMetadata[theme].label;
+
+        // Eğer sağda iframe varsa onu da besle
+        if (htmlFrame && htmlFrame.contentWindow) {
+            try {
+                htmlFrame.contentWindow.document.documentElement.setAttribute('data-theme', targetTheme);
+            } catch(e) {}
+        }
+    }
+
+    // Butona tıklandığında bir sonraki temaya geç
+    themeToggleBtn.addEventListener('click', () => {
+        const currentTheme = localStorage.getItem('saved-theme') || 'system';
+
+        // Mevcut temanın index'ini bul ve bir sonrakine geç (Döngü bozulursa diye fallback sıfır)
+        let currentIndex = themeCycle.indexOf(currentTheme);
+        let nextIndex = (currentIndex + 1) % themeCycle.length;
+        const nextTheme = themeCycle[nextIndex];
+
+        localStorage.setItem('saved-theme', nextTheme);
+        applyTheme(nextTheme);
+    });
+
+    // Sistem teması arka planda değişirse (Örn: Gece modu tetiklenirse) anlık takip et
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        const currentTheme = localStorage.getItem('saved-theme') || 'system';
+        if (currentTheme === 'system') {
+            applyTheme('system');
+        }
+    });
+
+    // İlk yükleme
+    function initTheme() {
+        const savedTheme = localStorage.getItem('saved-theme') || 'system';
+        applyTheme(savedTheme);
+    }
+
+    initTheme();
 
     initBlog();
 </script>
