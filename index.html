@@ -75,11 +75,6 @@
 </div>
 
 <script>
-    // --- GİTHUB BİLGİLERİ ---
-    const OWNER = "ganigurgah";
-    const REPO = "blog";
-    const BRANCH = "main";
-
     let allFiles = [];
     let currentPath = "contents";
     const dirHistory = [];
@@ -92,23 +87,21 @@
     const frameWrapper = document.getElementById('frame-wrapper');
     const htmlFrame = document.getElementById('html-frame');
 
-    // 1. Uygulama Başlangıcı: GitHub API ile tüm ağacı tek seferde al
+    // 1. Uygulama Başlangıcı
     async function initBlog() {
         try {
-            mdWrapper.innerHTML = '<p>İçerik yapısı uzak sunucudan yükleniyor...</p>';
-            const response = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRANCH}?recursive=1`);
-            if (!response.ok) throw new Error("HTTP " + response.status);
+            mdWrapper.innerHTML = '<p>İçerik yapısı yükleniyor...</p>';
+
+            // GitHub API yerine kendi ürettiğimiz statik tree.json dosyasını çekiyoruz
+            const response = await fetch('tree.json');
+            if (!response.ok) throw new Error("tree.json bulunamadı veya yüklenemedi.");
 
             const data = await response.json();
-            const rawTree = Array.isArray(data.tree) ? data.tree : [];
 
-            // Sadece 'contents/' altındaki .md ve .html dosyalarını ayıkla
-            allFiles = rawTree.filter(item =>
-                item.path.startsWith("contents/") &&
-                (item.path.endsWith(".md") || item.path.endsWith(".html"))
-            ).map((item, index) => ({
+            // Gelen veriyi formatla
+            allFiles = data.map((item, index) => ({
                 id: index + 1,
-                name: item.path.split('/').pop(),
+                name: item.name,
                 path: item.path,
                 type: 'file',
                 content: null
@@ -118,7 +111,6 @@
 
             // İlk açılışta ekrana basacak bir şey seç
             if (allFiles.length > 0) {
-                // Varsa kök dizindeki ilk dosyayı aç, yoksa hiyerarşideki ilk dosyayı yükle
                 const rootFiles = allFiles.filter(f => f.path.substring(0, f.path.lastIndexOf('/')) === 'contents');
                 if (rootFiles.length > 0) {
                     loadFile(rootFiles[0]);
@@ -126,10 +118,10 @@
                     loadFile(allFiles[0]);
                 }
             } else {
-                showEmpty("contents/ dizini altında uygun dosya bulunamadı.");
+                mdWrapper.innerHTML = `<h1>Boş</h1><p>contents/ dizini altında uygun dosya bulunamadı.</p>`;
             }
         } catch (error) {
-            mdWrapper.innerHTML = `<h1>Hata</h1><p>GitHub API üzerinden dizin yapısı alınamadı: ${error.message}</p>`;
+            mdWrapper.innerHTML = `<h1>Hata</h1><p>Dizin yapısı yüklenemedi: ${error.message}</p>`;
         }
     }
 

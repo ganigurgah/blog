@@ -1,0 +1,33 @@
+name: Generate Tree and Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'contents/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate tree.json
+        run: node generate-tree.js
+
+      - name: Commit and Push tree.json
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add tree.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: otomatik tree.json güncellemesi [skip ci]" && git push)
