@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kişisel Blog & Notlar</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --sidebar-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+            --accent-color: #007bff;
+            --hover-bg: #f1f3f5;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; height: 100vh; color: var(--text-color); background-color: var(--bg-color); }
+
+        /* Sol Panel (Sidebar) */
+        #sidebar { width: 320px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .search-box { padding: 15px; border-bottom: 1px solid var(--border-color); }
+        .search-box input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; outline: none; }
+        .search-box input:focus { border-color: var(--accent-color); }
+
+        .nav-controls { padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-color); border-bottom: 1px solid var(--border-color); font-size: 13px; }
+        .btn-back { padding: 4px 8px; background: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; }
+        .btn-back:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .list-container { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .list-item { padding: 10px 20px; display: flex; align-items: center; cursor: pointer; transition: background 0.2s; font-size: 14px; }
+        .list-item:hover { background: var(--hover-bg); }
+        .list-item .icon { margin-right: 10px; font-size: 16px; }
+        .list-item.directory { font-weight: 600; color: #495057; }
+
+        /* Sağ İçerik Alanı */
+        #content-area { flex: 1; overflow-y: auto; padding: 40px; background: #ffffff; display: flex; justify-content: center; }
+        .inner-content { max-width: 800px; width: 100%; line-height: 1.6; font-size: 16px; }
+
+        /* Markdown İçerik Stilleri */
+        .inner-content h1, .inner-content h2, .inner-content h3 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; }
+        .inner-content p { margin-bottom: 16px; }
+        .inner-content code { background: var(--hover-bg); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+        .inner-content pre { background: #212529; color: #f8f9fa; padding: 15px; border-radius: 6px; overflow-x: auto; margin-bottom: 16px; }
+        .inner-content pre code { background: transparent; color: inherit; padding: 0; }
+
+        /* Iframe Stili (HTML dosyaları için) */
+        #html-frame { width: 100%; height: 100%; border: none; }
+        .frame-wrapper { width: 100%; height: 100%; display: none; flex: 1; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="search-box">
+        <input type="text" id="search-input" placeholder="Dosya veya klasör ara...">
+    </div>
+    <div class="nav-controls">
+        <span id="current-path">Kök Dizin</span>
+        <button id="btn-back" class="btn-back" disabled>Üst Dizin</button>
+    </div>
+    <div id="list-container" class="list-container">
+    </div>
+</div>
+
+<div id="content-area">
+    <div id="md-wrapper" class="inner-content">
+        <h1>Hoş Geldiniz</h1>
+        <p>Lütfen okumak istediğiniz bir dökümanı soldaki panelden seçin.</p>
+    </div>
+    <div id="frame-wrapper" class="frame-wrapper">
+        <iframe id="html-frame"></iframe>
+    </div>
+</div>
+
+<script>
+    // --- GİTHUB BİLGİLERİ ---
+    const OWNER = "ganigurgah";
+    const REPO = "blog";
+    const BRANCH = "main";
+
+    let allFiles = [];            // GitHub'dan çekilen tüm filtrelenmiş dosyalar
+    let currentPath = "contents"; // Gezinilen aktif dizin
+    const dirHistory = [];        // Geri (Üst Dizin) butonu geçmişi
+
+    const listContainer = document.getElementById('list-container');
+    const searchInput = document.getElementById('search-input');
+    const currentPathLabel = document.getElementById('current-path');
+    const btnBack = document.getElementById('btn-back');
+    const mdWrapper = document.getElementById('md-wrapper');
+    const frameWrapper = document.getElementById('frame-wrapper');
+    const htmlFrame = document.getElementById('html-frame');
+
+    // 1. Uygulama Başlangıcı: GitHub API ile tüm ağacı tek seferde al
+    async function initBlog() {
+        try {
+            mdWrapper.innerHTML = '<p>İçerik yapısı uzak sunucudan yükleniyor...</p>';
+            const response = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRANCH}?recursive=1`);
+            if (!response.ok) throw new Error("HTTP " + response.status);
+
+            const data = await response.json();
+            const rawTree = Array.isArray(data.tree) ? data.tree : [];
+
+            // Sadece 'contents/' altındaki .md ve .html dosyalarını belleğe kaydet
+            allFiles = rawTree.filter(item =>
+                item.path.startsWith("contents/") &&
+                (item.path.endsWith(".md") || item.path.endsWith(".html"))
+            ).map(item => ({
+                name: item.path.split('/').pop(),
+                path: item.path,
+                type: 'file',
+                content: null
+            }));
+
+            renderDirectory();
+        } catch (error) {
+            mdWrapper.innerHTML = `<h1>Hata</h1><p>GitHub API üzerinden dizin yapısı alınamadı: ${error.message}</p>`;
+        }
+    }
+
+    // 2. Arayüzü Güncel Dizin Yapısına veya Arama Sonucuna Göre Listele
+    function renderDirectory(searchResultItems = null) {
+        listContainer.innerHTML = '';
+        const isSearching = searchResultItems !== null;
+
+        // Kontrol mekanizmalarını güncelle
+        btnBack.disabled = dirHistory.length === 0 || isSearching;
+        currentPathLabel.textContent = isSearching ? "Arama Sonuçları" : (currentPath === 'contents' ? 'Kök Dizin' : currentPath.replace("contents/", ""));
+
+        const items = isSearching ? searchResultItems : getItemsInCurrentPath();
+
+        if (!items || items.length === 0) {
+            listContainer.innerHTML = '<div class="list-item" style="color: #888; padding-left:20px;">Sonuç bulunamadı...</div>';
+            return;
+        }
+
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = `list-item ${item.type}`;
+
+            const icon = item.type === 'directory' ? '📁' : (item.name.endsWith('.md') ? '📝' : '🌐');
+            div.innerHTML = `<span class="icon">${icon}</span> <span>${item.name}</span>`;
+
+            div.addEventListener('click', () => {
+                if (item.type === 'directory') {
+                    dirHistory.push(currentPath);
+                    currentPath = item.path;
+                    renderDirectory();
+                } else {
+                    loadFile(item);
+                }
+            });
+
+            listContainer.appendChild(div);
+        });
+    }
+
+    // Mevcut path seviyesindeki gerçek dosyaları ve sanal klasör nesnelerini ayıkla
+    function getItemsInCurrentPath() {
+        const result = [];
+        const uniqueSubDirs = new Set();
+
+        allFiles.forEach(f => {
+            const fileDir = f.path.substring(0, f.path.lastIndexOf('/'));
+
+            if (fileDir === currentPath) {
+                // Doğrudan bu klasör seviyesindeki dosya
+                result.push(f);
+            } else if (f.path.startsWith(currentPath + '/')) {
+                // Daha derin seviyedeki alt klasör yapısı
+                const relativePath = f.path.substring(currentPath.length + 1);
+                const nextSlug = relativePath.split('/')[0];
+                const subDirPath = currentPath + '/' + nextSlug;
+
+                if (!uniqueSubDirs.has(subDirPath)) {
+                    uniqueSubDirs.add(subDirPath);
+                    result.push({
+                        name: nextSlug,
+                        path: subDirPath,
+                        type: 'directory'
+                    });
+                }
+            }
+        });
+
+        // Önce klasörleri, sonra dosyaları alfabetik sırala
+        return result.sort((a, b) => {
+            if (a.type === b.type) return a.name.localeCompare(b.name);
+            return a.type === 'directory' ? -1 : 1;
+        });
+    }
+
+    // 3. Dosya İçeriğini Getir ve Sağ Panele Bas (Lazy Load)
+    async function loadFile(fileObj) {
+        try {
+            if (!fileObj.content) {
+                if (fileObj.path.endsWith('.md')) {
+                    frameWrapper.style.display = 'none';
+                    mdWrapper.style.display = 'block';
+                    mdWrapper.innerHTML = '<p>Yükleniyor...</p>';
+
+                    const response = await fetch(fileObj.path);
+                    if (!response.ok) throw new Error("HTTP " + response.status);
+                    const text = await response.text();
+
+                    fileObj.content = marked.parse(text);
+                    mdWrapper.innerHTML = fileObj.content;
+                } else if (fileObj.path.endsWith('.html')) {
+                    // HTML dosyaları iframe uyumluluğu için path saklar
+                    fileObj.content = fileObj.path;
+                    mdWrapper.style.display = 'none';
+                    frameWrapper.style.display = 'flex';
+                    htmlFrame.src = fileObj.content;
+                }
+            } else {
+                // Hafızadan hızlıca yükle
+                if (fileObj.path.endsWith('.md')) {
+                    frameWrapper.style.display = 'none';
+                    mdWrapper.style.display = 'block';
+                    mdWrapper.innerHTML = fileObj.content;
+                } else if (fileObj.path.endsWith('.html')) {
+                    mdWrapper.style.display = 'none';
+                    frameWrapper.style.display = 'flex';
+                    htmlFrame.src = fileObj.content;
+                }
+            }
+        } catch (error) {
+            mdWrapper.style.display = 'block';
+            frameWrapper.style.display = 'none';
+            mdWrapper.innerHTML = `<h1>Hata</h1><p>Dosya yüklenemedi: ${error.message}</p>`;
+        }
+    }
+
+    // 4. Üst Dizine Geri Dönüş Butonu Ataması
+    btnBack.addEventListener('click', () => {
+        if (dirHistory.length > 0) {
+            currentPath = dirHistory.pop();
+            renderDirectory();
+        }
+    });
+
+    // 5. Kelime Kelime Anlık Filtreleme (Incremental Search)
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (query === '') {
+            renderDirectory();
+            return;
+        }
+
+        // Tüm alt kırılımlardaki sadece dosya isimlerinde filtreleme yap
+        const filteredResults = allFiles.filter(f => f.name.toLowerCase().includes(query));
+        renderDirectory(filteredResults);
+    });
+
+    // main
+    initBlog();
+</script>
+</body>
+</html>
