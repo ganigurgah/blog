@@ -80,9 +80,9 @@
     const REPO = "blog";
     const BRANCH = "main";
 
-    let allFiles = [];            // GitHub'dan çekilen tüm filtrelenmiş dosyalar
-    let currentPath = "contents"; // Gezinilen aktif dizin
-    const dirHistory = [];        // Geri (Üst Dizin) butonu geçmişi
+    let allFiles = [];
+    let currentPath = "contents";
+    const dirHistory = [];
 
     const listContainer = document.getElementById('list-container');
     const searchInput = document.getElementById('search-input');
@@ -102,11 +102,12 @@
             const data = await response.json();
             const rawTree = Array.isArray(data.tree) ? data.tree : [];
 
-            // Sadece 'contents/' altındaki .md ve .html dosyalarını belleğe kaydet
+            // Sadece 'contents/' altındaki .md ve .html dosyalarını ayıkla
             allFiles = rawTree.filter(item =>
                 item.path.startsWith("contents/") &&
                 (item.path.endsWith(".md") || item.path.endsWith(".html"))
-            ).map(item => ({
+            ).map((item, index) => ({
+                id: index + 1,
                 name: item.path.split('/').pop(),
                 path: item.path,
                 type: 'file',
@@ -114,17 +115,29 @@
             }));
 
             renderDirectory();
+
+            // İlk açılışta ekrana basacak bir şey seç
+            if (allFiles.length > 0) {
+                // Varsa kök dizindeki ilk dosyayı aç, yoksa hiyerarşideki ilk dosyayı yükle
+                const rootFiles = allFiles.filter(f => f.path.substring(0, f.path.lastIndexOf('/')) === 'contents');
+                if (rootFiles.length > 0) {
+                    loadFile(rootFiles[0]);
+                } else {
+                    loadFile(allFiles[0]);
+                }
+            } else {
+                showEmpty("contents/ dizini altında uygun dosya bulunamadı.");
+            }
         } catch (error) {
             mdWrapper.innerHTML = `<h1>Hata</h1><p>GitHub API üzerinden dizin yapısı alınamadı: ${error.message}</p>`;
         }
     }
 
-    // 2. Arayüzü Güncel Dizin Yapısına veya Arama Sonucuna Göre Listele
+    // 2. Arayüzü Listeleme
     function renderDirectory(searchResultItems = null) {
         listContainer.innerHTML = '';
         const isSearching = searchResultItems !== null;
 
-        // Kontrol mekanizmalarını güncelle
         btnBack.disabled = dirHistory.length === 0 || isSearching;
         currentPathLabel.textContent = isSearching ? "Arama Sonuçları" : (currentPath === 'contents' ? 'Kök Dizin' : currentPath.replace("contents/", ""));
 
@@ -156,7 +169,7 @@
         });
     }
 
-    // Mevcut path seviyesindeki gerçek dosyaları ve sanal klasör nesnelerini ayıkla
+    // Klasör ağacı süzme mantığı düzeltildi
     function getItemsInCurrentPath() {
         const result = [];
         const uniqueSubDirs = new Set();
@@ -165,10 +178,8 @@
             const fileDir = f.path.substring(0, f.path.lastIndexOf('/'));
 
             if (fileDir === currentPath) {
-                // Doğrudan bu klasör seviyesindeki dosya
                 result.push(f);
             } else if (f.path.startsWith(currentPath + '/')) {
-                // Daha derin seviyedeki alt klasör yapısı
                 const relativePath = f.path.substring(currentPath.length + 1);
                 const nextSlug = relativePath.split('/')[0];
                 const subDirPath = currentPath + '/' + nextSlug;
@@ -184,37 +195,39 @@
             }
         });
 
-        // Önce klasörleri, sonra dosyaları alfabetik sırala
         return result.sort((a, b) => {
             if (a.type === b.type) return a.name.localeCompare(b.name);
             return a.type === 'directory' ? -1 : 1;
         });
     }
 
-    // 3. Dosya İçeriğini Getir ve Sağ Panele Bas (Lazy Load)
+    // 3. Dosya İçeriğini Okuma
     async function loadFile(fileObj) {
         try {
+            // Alt klasör projesi (Project Pages) uyumu için URL rotası güvenli hale getirildi
+            const basePath = window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/';
+            const cleanBasePath = basePath.replace('index.html', '');
+            const targetUrl = window.location.origin + cleanBasePath + fileObj.path;
+
             if (!fileObj.content) {
                 if (fileObj.path.endsWith('.md')) {
                     frameWrapper.style.display = 'none';
                     mdWrapper.style.display = 'block';
                     mdWrapper.innerHTML = '<p>Yükleniyor...</p>';
 
-                    const response = await fetch(fileObj.path);
+                    const response = await fetch(targetUrl);
                     if (!response.ok) throw new Error("HTTP " + response.status);
                     const text = await response.text();
 
                     fileObj.content = marked.parse(text);
                     mdWrapper.innerHTML = fileObj.content;
                 } else if (fileObj.path.endsWith('.html')) {
-                    // HTML dosyaları iframe uyumluluğu için path saklar
-                    fileObj.content = fileObj.path;
+                    fileObj.content = targetUrl;
                     mdWrapper.style.display = 'none';
                     frameWrapper.style.display = 'flex';
                     htmlFrame.src = fileObj.content;
                 }
             } else {
-                // Hafızadan hızlıca yükle
                 if (fileObj.path.endsWith('.md')) {
                     frameWrapper.style.display = 'none';
                     mdWrapper.style.display = 'block';
@@ -232,7 +245,7 @@
         }
     }
 
-    // 4. Üst Dizine Geri Dönüş Butonu Ataması
+    // 4. Üst Dizin Kontrolü
     btnBack.addEventListener('click', () => {
         if (dirHistory.length > 0) {
             currentPath = dirHistory.pop();
@@ -240,7 +253,7 @@
         }
     });
 
-    // 5. Kelime Kelime Anlık Filtreleme (Incremental Search)
+    // 5. Incremental Search
     searchInput.addEventListener('input', (e) => {
         const query = e.target.value.toLowerCase().trim();
         if (query === '') {
@@ -248,12 +261,10 @@
             return;
         }
 
-        // Tüm alt kırılımlardaki sadece dosya isimlerinde filtreleme yap
         const filteredResults = allFiles.filter(f => f.name.toLowerCase().includes(query));
         renderDirectory(filteredResults);
     });
 
-    // main
     initBlog();
 </script>
 </body>
