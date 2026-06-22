@@ -1,15 +1,7 @@
 [
   {
-    "name": "hakkimda.html",
-    "path": "contents/hakkimda.html"
-  },
-  {
-    "name": "archon-projesi.md",
-    "path": "contents/projeler/archon-projesi.md"
-  },
-  {
-    "name": "hava-durumu.html",
-    "path": "contents/projeler/hava-durumu.html"
+    "name": "Spring Boot sadece bir REST API sunucusu değildir",
+    "path": "contents/java/Spring Boot sadece bir REST API sunucusu değildir.html"
   },
   {
     "name": "tanitim.md",

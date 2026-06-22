@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Boot Sadece REST API Sunucusu Değildir!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            border-bottom: 4px solid #007bff;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+
+        .meta {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        h2 {
+            font-size: 2em;
+            color: #007bff;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+            padding-left: 15px;
+        }
+
+        h3 {
+            font-size: 1.5em;
+            color: #495057;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        h4 {
+            font-size: 1.2em;
+            color: #666;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .highlight-red {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .highlight-blue {
+            color: #007bff;
+            font-weight: 600;
+        }
+
+        em {
+            color: #495057;
+            font-style: italic;
+        }
+
+        code {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: 'Courier New', monospace;
+            color: #d63384;
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #e0e0e0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            line-height: 1.5;
+            border-left: 4px solid #ffc107;
+        }
+
+        .code-block pre {
+            margin: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        table thead {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+        }
+
+        table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid #dee2e6;
+        }
+
+        table td {
+            padding: 15px;
+            border: 1px solid #dee2e6;
+        }
+
+        table tbody tr:nth-child(odd) {
+            background: #f8f9fa;
+        }
+
+        table tbody tr:hover {
+            background: #e7f3ff;
+            transition: background 0.2s;
+        }
+
+        .advantage-box {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+
+        .advantage-box strong {
+            color: #007bff;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .note-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+            color: #856404;
+        }
+
+        .note-box strong {
+            color: #fd7e14;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .method-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e7f3ff 100%);
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+
+        .method-card h3 {
+            color: #007bff;
+            margin-top: 0;
+            border: none;
+            padding: 0;
+        }
+
+        .method-number {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .comparison-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #dee2e6;
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .arrow {
+            color: #ffc107;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <h1>🚀 Spring Boot Sadece REST API Sunucusu Değildir!</h1>
+            <p class="subtitle">Embedded Tomcat'in Gücüyle Monolitik ve Full-Stack Dünyasına Yolculuk</p>
+            <div class="meta">
+                <div class="meta-item">📚 Kategori: Geliştirme / Mimari</div>
+                <div class="meta-item">⏱️ Okuma Süresi: ~12 dakika</div>
+                <div class="meta-item">👥 Hedef Kitle: Java & Web Geliştiricileri</div>
+            </div>
+        </header>
+
+        <!-- GIRIŞ -->
+        <section>
+            <h2>📖 Giriş: Yaygın Yanlış Algı</h2>
+            <p>
+                Günümüz modern web ekosisteminde öyle keskin sınırlarla karşılaşıyoruz ki, yeni nesil geliştiricilerin büyük
+                bir kısmı backend ve frontend mimarilerinin tamamen izole olması gerektiğine inanıyor. Bu algının merkezinde
+                genellikle şu basitleştirme yatar:
+            </p>
+
+            <div class="note-box">
+                <strong>❌ Yaygın Yanlış Kanı:</strong>
+                <em>"Spring Boot sadece JSON veri dönen bir REST API sunucusudur; arayüz ise harici bir sunucuda
+                (Vercel, Netlify, AWS S3 vb.) barındırılan bir React/Vue uygulaması olmak zorundadır."</em>
+            </div>
+
+            <p>
+                <span class="highlight-red">Bu varsayım tamamen yanlıştır!</span> Spring Boot, kalbinde yerleşik (embedded) bir
+                <strong>Apache Tomcat sunucusu</strong> taşır. Bu entegrasyon, onun sadece veri yöneten hafif bir servis değil,
+                aynı zamanda uygulamanın tüm katmanlarını (<span class="highlight-blue">Full-Stack</span>) tek bir çatı altında
+                sırtlayabilen, mikroservis karmaşasından uzak, dağıtımı kolay ve son derece performanslı monolitik yapılar
+                kurabilen devasa bir web sunucusu olduğu anlamına gelir.
+            </p>
+
+            <p>
+                Bu makalede, Spring Boot'un gömülü gücünü kullanarak arayüz teknolojilerini nasıl doğrudan tek bir
+                <code>.jar</code> dosyasında birleştirebileceğimizi <span class="highlight-blue">4 farklı yöntemle</span>,
+                mimari ve pratik kod yapılarıyla ele alacağız.
+            </p>
+        </section>
+
+        <!-- MİMARİ TEMELİ -->
+        <section>
+            <h2>🏗️ Mimarinin Temeli: Single JAR Dağıtımı ve Avantajları</h2>
+
+            <p>
+                Her şeyi tek bir Spring Boot projesinde toplamanın <strong>(Single JAR Deployment)</strong> bağımsız geliştiriciler
+                (Indie Hackers) ve kurumsal monolit projeleri için benzersiz avantajları vardır:
+            </p>
+
+            <div class="advantage-box">
+                <strong>✅ Sıfır CORS Problemi</strong>
+                Frontend ve backend aynı port ve domain üzerinden (<code>localhost:8080</code>) haberleştiği için
+                tarayıcıların meşhur Cross-Origin Resource Sharing engelleri tamamen ortadan kalkar.
+            </div>
+
+            <div class="advantage-box">
+                <strong>💰 Minimal Sunucu Maliyeti</strong>
+                Ayrı bir Node.js veya statik dosya sunucusuna ihtiyaç kalmaz. Tek bir Linux sunucusu veya Docker container
+                içinde çalışan tek bir <code>.jar</code> dosyası tüm web sitesini ayağa kaldırır.
+            </div>
+
+            <div class="advantage-box">
+                <strong>🔄 Kolay CI/CD</strong>
+                Sadece tek bir Maven veya Gradle build süreciyle hem arayüz derlenir hem de sunucu paketi hazır hale gelir.
+            </div>
+
+            <!-- TOMCAT DOSYA SUNUMU TABLOSU -->
+            <h3>📁 Gömülü Tomcat Dosya Sunumu Yapısı</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Dizin Yolu</th>
+                        <th>Sunulan İçerik Türü</th>
+                        <th>Erişim Tipi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>/src/main/resources/static/</code></td>
+                        <td>Derlenmiş React static (JS/CSS), resimler, düz HTML</td>
+                        <td>Doğrudan sunucu üzerinden statik dosya erişimi</td>
+                    </tr>
+                    <tr>
+                        <td><code>/src/main/resources/templates/</code></td>
+                        <td>Thymeleaf şablonları, JSP dosyaları</td>
+                        <td>Sunucu tarafında dinamik render (SSR)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- YÖNTEM 1 -->
+        <section>
+            <div class="method-card">
+                <h3><span class="method-number">1</span>Spring Boot + Thymeleaf / JSP</h3>
+                <h4>📄 Geleneksel Sunucu Tarafı Şablonlama (SSR)</h4>
+
+                <p>
+                    Sunucu tarafında şablonlama (Server-Side Rendering), verinin istemciye daha gitmeden HTML içine
+                    gömülmesini sağlar. <span class="highlight-blue">Güvenlik ve SEO avantajı yüksektir.</span>
+                </p>
+
+                <h4>🔌 Thymeleaf Entegrasyonu</h4>
+                <p>
+                    Modern Spring ekosisteminde JSP yerine varsayılan şablon motoru olarak Thymeleaf önerilir.
+                    Tamamen geçerli HTML5 yapısını korur.
+                </p>
+
+                <h4>Maven Bağımlılığı (pom.xml)</h4>
+                <div class="code-block"><pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-thymeleaf&lt;/artifactId&gt;
+&lt;/dependency&gt;</pre></div>
+
+                <h4>Controller Katmanı</h4>
+                <div class="code-block"><pre>@Controller
+public class HomeController {
+@GetMapping("/selam")
+public String selamla(Model model) {
+model.addAttribute("mesaj", "Spring Boot ve Thymeleaf Birlikteliği!");
+return "home"; // src/main/resources/templates/home.html dosyasını arar
+}
+}</pre></div>
+
+                <h4>Şablon Dosyası (src/main/resources/templates/home.html)</h4>
+                <div class="code-block"><pre>&lt;html xmlns:th="http://www.thymeleaf.org"&gt;
+&lt;body&gt;
+&lt;h1 th:text="${mesaj}"&gt;Varsayılan Metin&lt;/h1&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre></div>
+
+                <div class="note-box">
+                    <strong>⚠️ JSP/War Notu:</strong>
+                    Eğer eski usul JSP kullanmak isterseniz, Spring Boot projenizi standart bir <code>.jar</code> yerine
+                    <code>.war</code> olarak paketlemeli ve <code>tomcat-embed-jasper</code> bağımlılığını eklemelisiniz.
+                    Ancak modern yapılar için Thymeleaf çok daha esnektir.
+                </div>
+            </div>
+        </section>
+
+        <!-- YÖNTEM 2 -->
+        <section>
+            <div class="method-card">
+                <h3><span class="method-number">2</span>Spring Boot + Vaadin ile Tam Entegre React Uygulamaları</h3>
+
+                <p>
+                    Vaadin (v22+), Java geliştiricilerin <span class="highlight-red">tek bir satır JavaScript veya CSS yazmadan</span>,
+                    tamamen Java nesneleriyle modern ve reaktif single-page web uygulamaları (SPA) geliştirmesini sağlar.
+                </p>
+
+                <p>
+                    Arka planda Vaadin, Java kodlarınızı optimize edilmiş React bileşenlerine dönüştürür ve istemci ile
+                    sunucu arasındaki iletişimi WebSocket (Atmosphere framework) veya optimize edilmiş XHR ile otomatik
+                    yönetir.
+                </p>
+
+                <h4>Maven Bağımlılığı (pom.xml)</h4>
+                <div class="code-block"><pre>&lt;dependency&gt;
+    &lt;groupId&gt;com.vaadin&lt;/groupId&gt;
+    &lt;artifactId&gt;vaadin-spring-boot-starter&lt;/artifactId&gt;
+&lt;/dependency&gt;</pre></div>
+
+                <h4>Java ile Arayüz Geliştirme</h4>
+                <div class="code-block"><pre>@Route("") // Uygulamanın kök dizininde (/) çalışır
+public class MainView extends VerticalLayout {
+public MainView() {
+TextField adInput = new TextField("Adınız:");
+Button buton = new Button("Gönder");
+
+        buton.addClickListener(click -> {
+            Notification.show("Merhaba, " + adInput.getValue() + 
+                            "! Bu bir React WebApp'tir.");
+        });
+        add(adInput, buton);
+    }
+}</pre></div>
+
+                <p>
+                    Vaadin, projeyi derlediğinizde otomatik olarak bir Node.js entegrasyonu kurar, gerekli React bileşenlerini
+                    arka planda hazırlar ve gömülü Tomcat üzerinden tarayıcıya sunar. JavaScript dünyasına girmeden React
+                    gücünü kullanmak isteyenler için kusursuzdur.
+                </p>
+            </div>
+        </section>
+
+        <!-- YÖNTEM 3 -->
+        <section>
+            <div class="method-card">
+                <h3><span class="method-number">3</span>Spring Boot + JSF (PrimeFaces / BootsFaces) Mimarisi</h3>
+
+                <p>
+                    Özellikle kurumsal ve veri yoğunluklu (data-centric) legacy sistemlerin modernizasyonunda JSF (JavaServer Faces),
+                    zengin bileşen kütüphaneleriyle hala çok güçlüdür. Spring Boot çatısı altında PrimeFaces ve BootsFaces
+                    bileşenlerini bir arada kullanarak modern tasarımlar elde etmek mümkündür.
+                </p>
+
+                <p>
+                    Spring konfigürasyonunda JSF'in FacesServlet bileşenini gömülü Tomcat'e elle kaydetmemiz gerekir.
+                </p>
+
+                <h4>Servlet Kayıt Konfigürasyonu</h4>
+                <div class="code-block"><pre>@Configuration
+public class JsfConfig {
+@Bean
+public ServletRegistrationBean&lt;FacesServlet&gt; facesServletRegistration() {
+ServletRegistrationBean&lt;FacesServlet&gt; registration =
+new ServletRegistrationBean&lt;&gt;(new FacesServlet(), "*.xhtml");
+registration.setLoadOnStartup(1);
+return registration;
+}
+}</pre></div>
+
+                <h4>PrimeFaces ve BootsFaces Karışımı XHTML (src/main/webapp/index.xhtml)</h4>
+                <div class="code-block"><pre>&lt;html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:b="http://bootsfaces.net/ui"&gt;
+&lt;h:head&gt;
+&lt;title&gt;JSF ve Spring Boot&lt;/title&gt;
+&lt;/h:head&gt;
+&lt;h:body&gt;
+&lt;b:container&gt; &lt;!-- BootsFaces Grid Sistemi --&gt;
+&lt;b:jumbotron&gt;
+&lt;h2&gt;Enterprise Çözüm: JSF & Spring Boot&lt;/h2&gt;
+&lt;/b:jumbotron&gt;
+&lt;h:form&gt;
+&lt;!-- PrimeFaces Gelişmiş Bileşeni --&gt;
+&lt;p:colorPicker value="#{jsfBean.renk}" /&gt;
+&lt;p:commandButton value="Kaydet" action="#{jsfBean.kaydet}" /&gt;
+&lt;/h:form&gt;
+&lt;/b:container&gt;
+&lt;/h:body&gt;
+&lt;/html&gt;</pre></div>
+
+                <p>
+                    Bu mimari sayesinde, kurumsal arka plan servisleriniz Spring bağımlılık enjeksiyonu (DI) ile yönetilirken,
+                    ön yüzü JSF'in binlerce hazır kurumsal bileşeniyle ayağa kaldırabilirsiniz.
+                </p>
+            </div>
+        </section>
+
+        <!-- YÖNTEM 4 -->
+        <section>
+            <div class="method-card">
+                <h3><span class="method-number">4</span>Saf React Uygulamasını Gömülü Tomcat Klasörüne Çakma</h3>
+                <h4>🎯 The Indie Hacker Way</h4>
+
+                <p>
+                    Bağımsız bir frontend ekibiniz varsa veya harici bir React repoyu tek bir JAR içinde sunmak istiyorsanız,
+                    <span class="highlight-red">en agresif ve performanslı yöntem budur.</span> Süreç tamamen otomatize edilebilir.
+                </p>
+
+                <h3>📋 Yol Haritası ve Otomasyon</h3>
+
+                <ol>
+                    <li>React projenizde terminale gidip <code>npm run build</code> komutunu çalıştırırsınız (Vite kullanıyorsanız da aynı).</li>
+                    <li>Derleme sonucu oluşan <code>dist/</code> veya <code>build/</code> klasörü altındaki tüm dosyaları
+                        (<code>index.html</code>, <code>assets/</code> klasörü vb.) kopyalarsınız.</li>
+                    <li>Bu dosyaları Spring Boot projenizin <code>src/main/resources/static/</code> dizinine yapıştırırsınız.</li>
+                </ol>
+
+                <h4>Maven Plugin ile Otomasyon</h4>
+                <p>
+                    Bunu her seferinde elle yapmak yerine Maven derleme sürecine bağlayarak
+                    <code>frontend-maven-plugin</code> ile otomatize edebilirsiniz:
+                </p>
+
+                <div class="code-block"><pre>&lt;plugin&gt;
+    &lt;groupId&gt;com.github.eirslett&lt;/groupId&gt;
+    &lt;artifactId&gt;frontend-maven-plugin&lt;/artifactId&gt;
+    &lt;version&gt;1.12.1&lt;/version&gt;
+    &lt;!-- Konfigürasyon ile npm install ve npm run build adımları 
+         jar paketlenirken otomatik çalışır --&gt;
+&lt;/plugin&gt;</pre></div>
+
+                <h3>🚨 Kritik İpucu: React Router için Sunucu Yönlendirmesi</h3>
+                <p>
+                    React tek sayfalık bir uygulamadır (SPA). Eğer kullanıcı direkt tarayıcıya
+                    <code>domain.com/dashboard</code> yazarsa, Tomcat bu dizinde fiziksel bir dosya arayacak ve
+                    bulamadığı için <span class="highlight-red">404 hatası dönecektir.</span>
+                </p>
+
+                <p>
+                    Bunu engellemek için tüm bilinmeyen istekleri React'in <code>index.html</code> dosyasına
+                    yönlendiren bir Controller yazmalısınız:
+                </p>
+
+                <div class="code-block"><pre>@Controller
+public class SpaController {
+@RequestMapping("/{path:[^\.]*}")
+public String redirectAll() {
+return "forward:/"; // İsteği istemci tarafındaki yönlendiriciye (React Router) paslar
+}
+}</pre></div>
+</div>
+</section>
+
+        <!-- SONUÇ VE KARŞILAŞTIRMA -->
+        <section>
+            <h2>🎯 Sonuç: Ne Zaman Hangi Yöntem?</h2>
+
+            <p>
+                Gördüğünüz gibi Spring Boot, gömülü Apache Tomcat sunucusu sayesinde tek başına devasa bir ekosistemi
+                sırtlayabilir. Doğru mimariyi seçmek projenizin ihtiyaçlarına bağlıdır:
+            </p>
+
+            <div class="comparison-section">
+                <h3>📊 Yöntemler Karşılaştırması</h3>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Yöntem</th>
+                            <th>Kullanım Alanı</th>
+                            <th>Zorluk Derecesi</th>
+                            <th>Performans</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Thymeleaf / JSP</strong></td>
+                            <td>Hızlı, temiz ve SEO uyumlu içerik tabanlı projeler</td>
+                            <td>Kolay ⭐</td>
+                            <td>Mükemmel 🚀</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Vaadin</strong></td>
+                            <td>JavaScript yazmadan saf Java ile modern React SPA</td>
+                            <td>Orta ⭐⭐</td>
+                            <td>Çok İyi ⭐⭐⭐⭐</td>
+                        </tr>
+                        <tr>
+                            <td><strong>JSF + PrimeFaces</strong></td>
+                            <td>Veri yoğunluklu ve legacy kurumsal projeleri modernize etmek</td>
+                            <td>Zor ⭐⭐⭐</td>
+                            <td>İyi ⭐⭐⭐</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Static React Injection</strong></td>
+                            <td>Maksimum esneklik, sıfır CORS hatası, ayrışmış frontend</td>
+                            <td>Orta ⭐⭐</td>
+                            <td>Mükemmel 🚀</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ÖNERİLER -->
+            <div style="margin-top: 30px;">
+                <h3>✅ Şu Durumlar İçin Öneriler</h3>
+
+                <div class="advantage-box">
+                    <strong>📰 Hızlı, Temiz ve SEO Uyumlu İçerik Tabanlı Projeler</strong>
+                    <span class="arrow">→</span> <strong>Thymeleaf</strong>
+                </div>
+
+                <div class="advantage-box">
+                    <strong>⚙️ JavaScript Yazmadan Saf Java ile Modern SPA</strong>
+                    <span class="arrow">→</span> <strong>Vaadin</strong>
+                </div>
+
+                <div class="advantage-box">
+                    <strong>🏢 Veri Yoğunluklu Legacy Kurumsal Projeler</strong>
+                    <span class="arrow">→</span> <strong>JSF + PrimeFaces/BootsFaces</strong>
+                </div>
+
+                <div class="advantage-box">
+                    <strong>🎨 Maksimum Esneklik ve CORS Problemi Olmayan Ayrışmış Frontend</strong>
+                    <span class="arrow">→</span> <strong>Static Folder React Injection</strong>
+                </div>
+            </div>
+
+            <p style="margin-top: 30px; font-size: 1.1em; text-align: center;">
+                <strong>Bir sonraki projenizde sunucu sunucu gezmeden önce, elinizdeki gömülü Tomcat'in sınırlarını zorlamayı unutmayın! 🎯</strong>
+            </p>
+        </section>
+
+        <div class="footer">
+            <p>Bu belge Spring Boot Full-Stack geliştirme hakkında kapsamlı bir rehber sunmaktadır.</p>
+            <p>Son Güncelleme: 2024 | Türkçe Sürüm</p>
+        </div>
+    </div>
+</body>
+</html>
